@@ -4,37 +4,34 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-static int g=0;
-sem_t s1, s2;
+char buff[100];
+sem_t write_done, read_done;
 
-void* inc_thread() {
+void* reader_thread() {
 	while(1){
-		sem_wait(&s1);
-		g++;
-		printf("inc:%d\n",g);
-		sem_post(&s2);
+		sem_wait(&write_done);
+			printf("Enter Text: ");
+			fgets(buff, sizeof(buff), stdin);
+		sem_post(&read_done);
 	}
 }
 
-void* dec_thread() {
+void* writer_thread() {
         while(1){
-		sem_wait(&s2);
-                g--;
-		printf("dec:%d\n",g);
-                sem_post(&s1);
+                sem_wait(&read_done);
+			printf("\nPrint Text: %s\n",buff);
+		sem_post(&write_done);
 	}
-	
 }
 int main(){
 
 	pthread_t thread_id1 , thread_id2;
-	sem_init(&s1, 0 ,0);
-	sem_init(&s2, 0 ,1);
-
+	sem_init(&write_done, 0 ,1);
+	sem_init(&read_done, 0 ,0);
 	printf("Before \n");
 
-	int ret1 = pthread_create( &thread_id1, NULL, inc_thread, NULL);
-	int ret2 = pthread_create( &thread_id2, NULL, dec_thread, NULL);
+	int ret1 = pthread_create( &thread_id1, NULL, reader_thread, NULL);
+	int ret2 = pthread_create( &thread_id2, NULL, writer_thread, NULL);
 
 	printf("After \n");
 
@@ -49,8 +46,8 @@ int main(){
 	printf("Thread 1 returns: %d\n",ret1);
 	printf("Thread 2 returns: %d\n",ret2);
 
-        sem_destroy(&s1);
-	sem_destroy(&s2);
+        sem_destroy(&read_done);
+        sem_destroy(&write_done);
 
 	return 0;
 }
