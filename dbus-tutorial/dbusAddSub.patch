@@ -1,0 +1,97 @@
+diff --git a/dbus_c++_receive/receive.cpp b/dbus_c++_receive/receive.cpp
+index c98c7ef..518308b 100644
+--- a/dbus_c++_receive/receive.cpp
++++ b/dbus_c++_receive/receive.cpp
+@@ -14,10 +14,16 @@ int echoMessage(std::string str) {
+ //This is the second method implemented.  It will print out the string, and return
+ //the addition of the two ints.
+ int echoAndAdd(std::string str, int a, int b) {
+-	printf("%s\n", str.c_str());
++	printf("%s() args:%d %d\n", str.c_str(), a , b);
+ 	return a+b;
+ }
+ 
++int echoAndSub(std::string str, int a, int b) {
++        printf("%s() args:%d %d\n", str.c_str(),a ,b);
++        return a-b;
++}
++
++
+ int main(int argc, char** argv){
+ 
+ 	//The dispatcher sends us information.  Make sure that it doesn't go out of scope or bad things will happen.
+@@ -37,6 +43,7 @@ int main(int argc, char** argv){
+   	
+   	//Create the second method
+   	object->create_method<int(std::string, int, int)>("com.rm5248.ReceiveInterface", "echoAndAdd", sigc::ptr_fun(echoAndAdd) );
++	object->create_method<int(std::string, int, int)>("com.rm5248.ReceiveInterface", "echoAndSub", sigc::ptr_fun(echoAndSub) );
+   	
+   	while(true){
+ 		std::this_thread::sleep_for( std::chrono::seconds( 300 ) );
+diff --git a/dbus_c++_send/send.cpp b/dbus_c++_send/send.cpp
+index 5a765d4..35d2876 100644
+--- a/dbus_c++_send/send.cpp
++++ b/dbus_c++_send/send.cpp
+@@ -2,6 +2,7 @@
+ #include <dbus-cxx.h>
+ #include <string.h>
+ #include <unistd.h>
++#include <stdlib.h>
+ 
+ int main(int argc, char** argv){
+ 
+@@ -19,14 +20,46 @@ int main(int argc, char** argv){
+ 	//Make a method that returns an int and takes in a string and two ints
+ 	DBus::MethodProxy<int(std::string, int, int)>& echoAndAdd = *(object->create_method<int(std::string, int, int)>
+ 		("com.rm5248.ReceiveInterface", "echoAndAdd"));
+-		
+-	//We can now call these methods as though they were defined in this file, or in an included file
+-	int firstResult = echoMessage("Hello Java from C++!");
+-	printf("%d\n", firstResult);
+-	
+-	int secondResult = echoAndAdd("Testing the addition", 42, 19);
+-	printf("%d\n", secondResult);
+ 
+-  	
++	DBus::MethodProxy<int(std::string, int, int)>& echoAndSub = *(object->create_method<int(std::string, int, int)>
++                ("com.rm5248.ReceiveInterface", "echoAndSub"));
++
++
++
++	int a=0, b=0;
++    	// Converting string type to integer type
++    	// using function "atoi( argument)"* 
++
++	if( argc <=3 ) {
++		printf(" usage :\n");
++		printf("./send echo . .\n");
++		printf("./send add value1 value2 \n");
++		printf("./send sub value1 value2 \n");
++		exit(-1);
++	}
++
++	if(argc == 4) {
++    		a = atoi(argv[2]);     
++    		b = atoi(argv[3]);
++	}
++
++
++
++	if(strcmp(argv[1],"echo")==0) {
++		//We can now call these methods as though they were defined in this file, or in an included file
++        	int firstResult = echoMessage("Client: Hello server !");
++        	printf("%d\n", firstResult);
++	}
++
++	if(strcmp(argv[1],"add")==0) {
++		int secondResult = echoAndAdd("Testing the addition", a, b);
++		printf("ADD=%d\n", secondResult); 
++	}
++
++	if(strcmp(argv[1],"sub")==0)  {
++        	int thirdResult = echoAndSub("Testing the subtraction", a, b);
++        	printf("SUB=%d\n", thirdResult); 
++	}
++
+   	return 0;
+ }
